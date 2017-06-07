@@ -16,10 +16,10 @@ public class TestPP4j_ObjectInList {
         String[] actual = PP4j.pp(obj)
             .split("\n");
         String[] expected = {
-            "TestObjectInList [ ",
+            "TestObjectInList {",
             "  str = [a, b, c]",
             "  obj = <null>",
-            "]"
+            "}"
         };
 
         String msg = "actual is \n" + String.join("\n", actual) + "\n";

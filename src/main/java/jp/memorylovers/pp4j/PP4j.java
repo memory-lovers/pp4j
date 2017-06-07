@@ -1,7 +1,6 @@
 package jp.memorylovers.pp4j;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -25,93 +24,102 @@ public class PP4j {
     private String prittyPrint(int indent, String fieldName, Object obj) {
 
         if (obj instanceof List) {
-            if (((List<Object>) obj).size() > 0) {
-                appendLn(indent, "[ ");
-                for (Object c : (List<Object>) obj) {
-                    prittyPrint(indent + 1, null, c);
-                }
-                appendLn(indent, "]");
-            } else {
-                appendLn(indent, "[]");
-            }
+            ppList(indent, fieldName, (List<Object>) obj);
         } else {
-            if (obj != null && obj.getClass() != null && !obj.getClass()
-                .getName()
-                .startsWith("java")) {
-
-                String className = obj.getClass()
-                    .getSimpleName();
-                //System.out.println("class name is " + className);
-                if (fieldName == null) {
-                    appendLn(indent, className + " { ");
-                } else {
-                    appendLn(indent, fieldName + " = " + className + " { ");
-                }
-
-                indent++;
-                Field[] fields = obj.getClass()
-                    .getDeclaredFields();
-                for (Field field : fields) {
-                    field.setAccessible(true);
-                    //System.out.println("field name is " + field.getName());
-                    try {
-                        if (field.getType() == Integer.class || field
-                            .getType() == int.class) {
-                            appendField(
-                                indent, field.getName(), field.get(obj));
-                        } else if (field.getType() == String.class) {
-                            appendField(
-                                indent, field.getName(), field.get(obj));
-                        } else if (field.getType() == Boolean.class || field
-                            .getType() == boolean.class) {
-                            appendField(
-                                indent, field.getName(), field.get(obj));
-                        } else if (field.getType() == List.class) {
-                            Object child = field.get(obj);
-
-                            if (child == null) {
-                                appendField(indent, field.getName(), child);
-                            }else if (field.getGenericType() instanceof ParameterizedType && ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0].getTypeName().startsWith("java.util.List")) {
-                                ParameterizedType type = (ParameterizedType) field.getGenericType();
-                                //System.out.println("generic type is " + field.getGenericType().getTypeName() + " " + type.getActualTypeArguments()[0].getTypeName());
-                                String[] vals = ((List<Object>) child).stream()
-                                        .map(Object::toString)
-                                        .toArray(String[]::new);
-                                    appendLn(indent, "[ " + String.join(", ", vals) + "]");
-                            } else {
-                                @SuppressWarnings("unchecked")
-                                List<Object> list = (List<Object>) child;
-                                if (list.size() > 0) {
-                                    appendLn(indent, field.getName() + " = [ ");
-                                    for (Object c : list) {
-                                        prittyPrint(indent + 1, null, c);
-                                    }
-                                    appendLn(indent, "]");
-                                } else {
-                                    appendLn(indent, field.getName() + " = []");
-                                }
-                            }
-                        } else {
-                            Object child = field.get(obj);
-                            if (child == null) {
-                                appendField(indent, field.getName(), child);
-                            } else {
-                                prittyPrint(
-                                    indent, field.getName(), field.get(obj));
-                            }
-                        }
-
-                    } catch (IllegalArgumentException
-                            | IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                indent--;
-                appendLn(indent, "}");
-            }
+            ppObject(indent, fieldName, obj);
         }
         return sb.toString();
+    }
+
+    private void ppList(int indent, String fieldName, List<Object> list) {
+        if (list.isEmpty()) {
+            appendLn(indent, "[]");
+            return;
+        }
+
+        Object elm = list.get(0);
+        if (ReflectionUtils.isPrimitive(elm.getClass())) {
+            String[] vals = list.stream()
+                .map(Object::toString)
+                .toArray(String[]::new);
+            appendLn(indent, "[" + String.join(", ", vals) + "]");
+        } else {
+            appendLn(indent, "[");
+            for (Object c : list) {
+                prittyPrint(indent + 1, null, c);
+            }
+            appendLn(indent, "]");
+        }
+    }
+
+    private void ppObject(int indent, String fieldName, Object obj) {
+        if (obj == null) {
+            appendField(indent, fieldName, obj);
+            return;
+        }
+
+        Class<?> cls = obj.getClass();
+        String clsName = cls.getName();
+        if (clsName.startsWith("java")) {
+            return;
+        }
+
+        String className = cls.getSimpleName();
+        // System.out.println("class name is " + className);
+
+        if (fieldName == null) {
+            appendLn(indent, className + " {");
+        } else {
+            appendLn(indent, fieldName + " = " + className + " {");
+        }
+
+        indent++;
+        Field[] fields = cls.getDeclaredFields();
+        for (Field field : fields) {
+            field.setAccessible(true);
+            try {
+                ppField(indent, field, obj);
+            } catch (IllegalArgumentException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+
+        indent--;
+        appendLn(indent, "}");
+    }
+
+    private void ppField(int indent, Field field, Object obj)
+            throws IllegalArgumentException, IllegalAccessException {
+
+        Object fObj = field.get(obj);
+        String fName = field.getName();
+        LOG.debug("field name[" + fName + "] is " + field.getType());
+        if (fObj == null) {
+            appendField(indent, fName, fObj);
+        } else if (ReflectionUtils.isPrimitive(field.getType())) {
+            LOG.debug("field name[" + fName + "] is " + field.getType());
+            appendField(indent, fName, fObj);
+        } else if (ReflectionUtils.isPrimitiveList(field)) {
+            @SuppressWarnings("unchecked")
+            List<Object> list = (List<Object>) fObj;
+            String[] vals = list.stream()
+                .map(Object::toString)
+                .toArray(String[]::new);
+            appendField(indent, fName, "[" + String.join(", ", vals) + "]");
+        } else if (ReflectionUtils.isList(field.getType())) {
+            @SuppressWarnings("unchecked")
+            List<Object> list = (List<Object>) fObj;
+            if (list.isEmpty()) {
+                appendLn(indent, field.getName() + " = []");
+            } else {
+                appendLn(indent, field.getName() + " = [");
+                list.stream()
+                    .forEach(c -> prittyPrint(indent + 1, null, c));
+                appendLn(indent, "]");
+            }
+        } else {
+            prittyPrint(indent, fName, fObj);
+        }
     }
 
     private void appendLn(int indent, String contents) {

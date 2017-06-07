@@ -33,8 +33,8 @@ public class TestPP4j_List {
             .split("\n");
         String[] expected = {
             "[",
-            " [a, b, c]",
-            " [a, b, c]",
+            "  [a, b, c]",
+            "  [a, b, c]",
             "]"
         };
 
@@ -51,12 +51,12 @@ public class TestPP4j_List {
         String[] actual = PP4j.pp(list)
             .split("\n");
         String[] expected = {
-            "[ ",
-            "  TestObjectNest { ",
+            "[",
+            "  TestObjectNest {",
             "    str = AAA",
             "    obj = <null>",
             "  }",
-            "  TestObjectNest { ",
+            "  TestObjectNest {",
             "    str = AAA",
             "    obj = <null>",
             "  }",
@@ -84,6 +84,7 @@ public class TestPP4j_List {
     @Test
     public void test_List_Object_null() {
         List<TestObjectNest> list = new ArrayList<>();
+        list.add(null);
 
         String[] actual = PP4j.pp(list)
             .split("\n");
@@ -108,23 +109,23 @@ public class TestPP4j_List {
         String[] actual = PP4j.pp(plist)
             .split("\n");
         String[] expected = {
-            "[ ",
-            "  [ ",
-            "    TestObjectNest { ",
+            "[",
+            "  [",
+            "    TestObjectNest {",
             "      str = AAA",
             "      obj = <null>",
             "    }",
-            "    TestObjectNest { ",
+            "    TestObjectNest {",
             "      str = AAA",
             "      obj = <null>",
             "    }",
             "  ]",
-            "  [ ",
-            "    TestObjectNest { ",
+            "  [",
+            "    TestObjectNest {",
             "      str = AAA",
             "      obj = <null>",
             "    }",
-            "    TestObjectNest { ",
+            "    TestObjectNest {",
             "      str = AAA",
             "      obj = <null>",
             "    }",
@@ -146,7 +147,7 @@ public class TestPP4j_List {
         String[] actual = PP4j.pp(plist)
             .split("\n");
         String[] expected = {
-            "[ ",
+            "[",
             "  []",
             "  []",
             "]"

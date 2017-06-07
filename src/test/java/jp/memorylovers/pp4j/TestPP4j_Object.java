@@ -15,7 +15,7 @@ public class TestPP4j_Object {
             "  pubByte = 1",
             "  pubChar = a",
             "  pubInt = 11",
-            "  publong = 22",
+            "  pubLong = 22",
             "  pubFloat = 1.1",
             "  pubDouble = 2.2",
             "  pubBool = true",
@@ -33,9 +33,9 @@ public class TestPP4j_Object {
         String[] expected = {
             "TestObjectWrapper {",
             "  pubByte = 1",
-            "  pubStr = AA",
+            "  pubStr = AAA",
             "  pubInt = 11",
-            "  publong = 22",
+            "  pubLong = 22",
             "  pubFloat = 1.1",
             "  pubDouble = 2.2",
             "  pubBool = true",
@@ -55,9 +55,9 @@ public class TestPP4j_Object {
         String[] actual = PP4j.pp(parent)
             .split("\n");
         String[] expected = {
-            "TestObjectNest { ",
+            "TestObjectNest {",
             "  str = AAA",
-            "  obj = TestObjectNest { ",
+            "  obj = TestObjectNest {",
             "    str = AAA",
             "    obj = <null>",
             "  }",
@@ -79,11 +79,11 @@ public class TestPP4j_Object {
         String[] actual = PP4j.pp(parent)
             .split("\n");
         String[] expected = {
-            "TestObjectNest { ",
+            "TestObjectNest {",
             "  str = AAA",
-            "  obj = TestObjectNest { ",
+            "  obj = TestObjectNest {",
             "    str = AAA",
-            "    obj = TestObjectNest { ",
+            "    obj = TestObjectNest {",
             "      str = AAA",
             "      obj = <null>",
             "    }",
