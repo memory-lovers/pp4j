@@ -4,7 +4,9 @@ import java.util.List;
 
 public interface IPP4jFormatter {
 
-    public String fmtValue(int indent, Object obj);
+    public String fmtValue(Object obj);
+
+    public String fmtFieldValue(int indent, String key, Object obj);
 
     public String fmtObject(int indent, Object obj, String contents);
 

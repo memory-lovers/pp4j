@@ -6,14 +6,23 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import jp.memorylovers.pp4j.formatter.IPP4jFormatter;
+import jp.memorylovers.pp4j.formatter.SimplePP4jFormatter;
+
 public class PP4j {
     private static final Logger LOG = LoggerFactory.getLogger(PP4j.class);
 
+    private IPP4jFormatter formatter;
     private StringBuilder sb = new StringBuilder();
     private boolean visibleNull = true;
 
+    private PP4j(IPP4jFormatter formatter) {
+        this.formatter = formatter;
+    }
+
     public static String pp(Object root) {
-        return new PP4j().prittyPrint(root);
+        IPP4jFormatter formatter = new SimplePP4jFormatter();
+        return new PP4j(formatter).prittyPrint(root);
     }
 
     public String prittyPrint(Object root) {
@@ -132,17 +141,8 @@ public class PP4j {
     }
 
     private void appendField(int indent, String key, Object obj) {
-        String value;
-
-        if (obj == null) {
-            value = "<null>";
-        } else {
-            value = obj.toString()
-                .trim();
-        }
-
         if (visibleNull || (!visibleNull && obj != null)) {
-            appendLn(indent, key + " = " + value);
+            sb.append(formatter.fmtFieldValue(indent, key, obj));
         }
     }
 }
