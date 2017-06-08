@@ -1,13 +1,16 @@
 package jp.memorylovers.pp4j.formatter;
 
+import org.apache.commons.lang3.StringUtils;
+
 public abstract class AbstractPP4jFormatter implements IPP4jFormatter {
 
-    protected String appendLn(int indent, String contents) {
-        String str = "";
-        for (int i = 0; i < indent; i++) {
-            str += "  ";
-        }
+    protected static final String INDENT_DLM = "  ";
 
-        return str + contents + "\n";
+    protected String appendLn(int indent, String contents) {
+        return indent(indent) + contents + "\n";
+    }
+
+    protected String indent(int indent) {
+        return StringUtils.repeat(INDENT_DLM, indent);
     }
 }

@@ -1,14 +1,26 @@
 package jp.memorylovers.pp4j.formatter;
 
-import java.util.List;
-
 public interface IPP4jFormatter {
 
-    public String fmtValue(Object obj);
+    public String fmtValue(Object value);
 
-    public String fmtFieldValue(int indent, String key, Object obj);
+    public String fmtValue(String fieldName, Object value);
 
-    public String fmtObject(int indent, Object obj, String contents);
+    public String fmtListEmpty();
 
-    public String fmtList(int indent, List<Object> obj, String contents);
+    public String fmtListEmpty(String fieldName);
+
+    public String fmtPrimitiveList(String[] elements);
+
+    public String fmtPrimitiveList(String fieldName, String[] elements);
+
+    public String fmtObjectList(String fieldName, String[] elements);
+
+    public String fmtObjectList(String[] elements);
+
+    public String fmtObject(String clsName, String[] fields);
+
+    public String fmtObject(String fName, String cName, String[] fields);
+
+    public String fmtField(String fieldName, String value);
 }

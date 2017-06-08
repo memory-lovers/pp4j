@@ -30,6 +30,7 @@ dependencies {
     // Logging
     compile 'org.slf4j:slf4j-api:1.7.25'
     compile 'ch.qos.logback:logback-classic:1.2.3'
+    compile 'org.apache.commons:commons-lang3:3.5'
 
     // Testing
     testCompile 'junit:junit:4.12'

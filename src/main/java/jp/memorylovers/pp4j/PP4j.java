@@ -1,7 +1,9 @@
 package jp.memorylovers.pp4j;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +15,6 @@ public class PP4j {
     private static final Logger LOG = LoggerFactory.getLogger(PP4j.class);
 
     private IPP4jFormatter formatter;
-    private StringBuilder sb = new StringBuilder();
     private boolean visibleNull = true;
 
     private PP4j(IPP4jFormatter formatter) {
@@ -33,17 +34,19 @@ public class PP4j {
     private String prittyPrint(int indent, String fieldName, Object obj) {
 
         if (obj instanceof List) {
-            ppList(indent, fieldName, (List<Object>) obj);
+            return ppList(indent, fieldName, (List<Object>) obj);
         } else {
-            ppObject(indent, fieldName, obj);
+            return ppObject(indent, fieldName, obj);
         }
-        return sb.toString();
     }
 
-    private void ppList(int indent, String fieldName, List<Object> list) {
+    private String ppList(int indent, String fieldName, List<Object> list) {
         if (list.isEmpty()) {
-            appendLn(indent, "[]");
-            return;
+            if (fieldName == null) {
+                return formatter.fmtListEmpty();
+            } else {
+                return formatter.fmtListEmpty(fieldName);
+            }
         }
 
         Object elm = list.get(0);
@@ -51,98 +54,90 @@ public class PP4j {
             String[] vals = list.stream()
                 .map(Object::toString)
                 .toArray(String[]::new);
-            appendLn(indent, "[" + String.join(", ", vals) + "]");
-        } else {
-            appendLn(indent, "[");
-            for (Object c : list) {
-                prittyPrint(indent + 1, null, c);
+            if (fieldName == null) {
+                return formatter.fmtPrimitiveList(vals);
+            } else {
+                return formatter.fmtPrimitiveList(fieldName, vals);
             }
-            appendLn(indent, "]");
+        } else {
+            String[] contents = list.stream()
+                .map(c -> prittyPrint(indent + 1, null, c))
+                .toArray(String[]::new);
+            if (fieldName == null) {
+                return formatter.fmtObjectList(contents);
+            } else {
+                return formatter.fmtObjectList(fieldName, contents);
+            }
+
         }
     }
 
-    private void ppObject(int indent, String fieldName, Object obj) {
+    private String ppObject(int indent, String fieldName, Object obj) {
         if (obj == null) {
-            appendField(indent, fieldName, obj);
-            return;
+            return formatter.fmtValue(fieldName, obj);
         }
 
         Class<?> cls = obj.getClass();
         String clsName = cls.getName();
         if (clsName.startsWith("java")) {
-            return;
+            return "";
         }
 
         String className = cls.getSimpleName();
         // System.out.println("class name is " + className);
 
+        String[] contents = Arrays.stream(cls.getDeclaredFields())
+            .map(field -> {
+                field.setAccessible(true);
+                try {
+                    return Optional.of(ppField(indent + 1, field, obj));
+                } catch (IllegalArgumentException | IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+                return Optional.empty();
+            })
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .toArray(String[]::new);
+
         if (fieldName == null) {
-            appendLn(indent, className + " {");
+            return formatter.fmtObject(className, contents);
         } else {
-            appendLn(indent, fieldName + " = " + className + " {");
+            return formatter.fmtObject(fieldName, className, contents);
         }
-
-        indent++;
-        Field[] fields = cls.getDeclaredFields();
-        for (Field field : fields) {
-            field.setAccessible(true);
-            try {
-                ppField(indent, field, obj);
-            } catch (IllegalArgumentException | IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }
-
-        indent--;
-        appendLn(indent, "}");
     }
 
-    private void ppField(int indent, Field field, Object obj)
+    private String ppField(int indent, Field field, Object obj)
             throws IllegalArgumentException, IllegalAccessException {
 
         Object fObj = field.get(obj);
         String fName = field.getName();
         LOG.debug("field name[" + fName + "] is " + field.getType());
         if (fObj == null) {
-            appendField(indent, fName, fObj);
+            return formatter.fmtValue(fName, fObj);
         } else if (ReflectionUtils.isPrimitive(field.getType())) {
             LOG.debug("field name[" + fName + "] is " + field.getType());
-            appendField(indent, fName, fObj);
+            return formatter.fmtValue(fName, fObj);
         } else if (ReflectionUtils.isPrimitiveList(field)) {
             @SuppressWarnings("unchecked")
             List<Object> list = (List<Object>) fObj;
             String[] vals = list.stream()
                 .map(Object::toString)
                 .toArray(String[]::new);
-            appendField(indent, fName, "[" + String.join(", ", vals) + "]");
+            return formatter.fmtPrimitiveList(fName, vals);
         } else if (ReflectionUtils.isList(field.getType())) {
             @SuppressWarnings("unchecked")
             List<Object> list = (List<Object>) fObj;
             if (list.isEmpty()) {
-                appendLn(indent, field.getName() + " = []");
+                return formatter.fmtListEmpty(fName);
             } else {
-                appendLn(indent, field.getName() + " = [");
-                list.stream()
-                    .forEach(c -> prittyPrint(indent + 1, null, c));
-                appendLn(indent, "]");
+                String[] contents = list.stream()
+                    .map(c -> prittyPrint(indent + 1, null, c))
+                    .toArray(String[]::new);
+                return formatter.fmtObjectList(fName, contents);
             }
         } else {
-            prittyPrint(indent, fName, fObj);
-        }
-    }
-
-    private void appendLn(int indent, String contents) {
-        String str = "";
-        for (int i = 0; i < indent; i++) {
-            str += "  ";
-        }
-
-        sb.append(str + contents + "\n");
-    }
-
-    private void appendField(int indent, String key, Object obj) {
-        if (visibleNull || (!visibleNull && obj != null)) {
-            sb.append(formatter.fmtFieldValue(indent, key, obj));
+            return prittyPrint(indent, fName, fObj);
         }
     }
 }
