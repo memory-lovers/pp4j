@@ -2,9 +2,10 @@ package jp.memorylovers.pp4j;
 
 import static org.junit.Assert.*;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
@@ -39,20 +40,28 @@ public class TestReflectionUtils {
 
     @Test
     public void test_isPrimitiveList() {
-        TestObjectInList obj = new TestObjectInList();
-        Class<?> cls = obj.getClass();
+        List<String> list = new ArrayList<>();
+        list.add(null);
 
-        for (Field field : cls.getFields()) {
-            String fName = field.getName();
-            Type type = field.getGenericType();
+        Class<?> cls = list.getClass();
 
-            ParameterizedType pType = (ParameterizedType) type;
+        System.out.println("class is " + cls);
+        Type type = cls.getGenericSuperclass();
+        System.out.println("type is " + type);
 
-            System.out.println(
-                fName + " : " + type + " : " + pType
-                    .getActualTypeArguments()[0]);
-            System.out.println(fName + " : " + (field.getType() == List.class));
+        if (type instanceof ParameterizedType) {
+            ParameterizedType paramType = (ParameterizedType) type;
+            System.out.println("paramType is " + paramType);
+
+            Type[] actTypes = paramType.getActualTypeArguments();
+            Arrays.stream(actTypes)
+                .forEach(tv -> {
+                    System.out.println("actual Type variable is " + tv);
+                });
         }
 
+        System.out.println(cls.getName());
+        Arrays.stream(cls.getGenericInterfaces())
+            .forEach(ty -> System.out.println("Type is " + ty));
     }
 }

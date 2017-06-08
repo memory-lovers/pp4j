@@ -15,7 +15,6 @@ public class PP4j {
     private static final Logger LOG = LoggerFactory.getLogger(PP4j.class);
 
     private IPP4jFormatter formatter;
-    private boolean visibleNull = true;
 
     private PP4j(IPP4jFormatter formatter) {
         this.formatter = formatter;
@@ -27,20 +26,20 @@ public class PP4j {
     }
 
     public String prittyPrint(Object root) {
-        return prittyPrint(0, null, root);
+        return prittyPrint(null, root);
     }
 
     @SuppressWarnings("unchecked")
-    private String prittyPrint(int indent, String fieldName, Object obj) {
+    private String prittyPrint(String fieldName, Object obj) {
 
         if (obj instanceof List) {
-            return ppList(indent, fieldName, (List<Object>) obj);
+            return ppList(fieldName, (List<Object>) obj);
         } else {
-            return ppObject(indent, fieldName, obj);
+            return ppObject(fieldName, obj);
         }
     }
 
-    private String ppList(int indent, String fieldName, List<Object> list) {
+    private String ppList(String fieldName, List<Object> list) {
         if (list.isEmpty()) {
             if (fieldName == null) {
                 return formatter.fmtListEmpty();
@@ -49,8 +48,21 @@ public class PP4j {
             }
         }
 
-        Object elm = list.get(0);
-        if (ReflectionUtils.isPrimitive(elm.getClass())) {
+        Optional<Object> elm = list.stream()
+            .filter(v -> v != null)
+            .findFirst();
+
+        if (!elm.isPresent()) {
+            String[] vals = list.stream()
+                .map(val -> formatter.fmtValue(val))
+                .toArray(String[]::new);
+            if (fieldName == null) {
+                return formatter.fmtPrimitiveList(vals);
+            } else {
+                return formatter.fmtPrimitiveList(fieldName, vals);
+            }
+        } else if (ReflectionUtils.isPrimitive(elm.get()
+            .getClass())) {
             String[] vals = list.stream()
                 .map(Object::toString)
                 .toArray(String[]::new);
@@ -61,20 +73,24 @@ public class PP4j {
             }
         } else {
             String[] contents = list.stream()
-                .map(c -> prittyPrint(indent + 1, null, c))
+                .map(c -> prittyPrint(null, c))
                 .toArray(String[]::new);
             if (fieldName == null) {
                 return formatter.fmtObjectList(contents);
             } else {
                 return formatter.fmtObjectList(fieldName, contents);
             }
-
         }
     }
 
-    private String ppObject(int indent, String fieldName, Object obj) {
+    private String ppObject(String fieldName, Object obj) {
         if (obj == null) {
-            return formatter.fmtValue(fieldName, obj);
+            if (fieldName == null) {
+                return formatter.fmtValue(obj);
+            } else {
+                return formatter.fmtValue(fieldName, obj);
+            }
+
         }
 
         Class<?> cls = obj.getClass();
@@ -90,7 +106,7 @@ public class PP4j {
             .map(field -> {
                 field.setAccessible(true);
                 try {
-                    return Optional.of(ppField(indent + 1, field, obj));
+                    return Optional.of(ppField(field, obj));
                 } catch (IllegalArgumentException | IllegalAccessException e) {
                     e.printStackTrace();
                 }
@@ -107,7 +123,7 @@ public class PP4j {
         }
     }
 
-    private String ppField(int indent, Field field, Object obj)
+    private String ppField(Field field, Object obj)
             throws IllegalArgumentException, IllegalAccessException {
 
         Object fObj = field.get(obj);
@@ -132,12 +148,12 @@ public class PP4j {
                 return formatter.fmtListEmpty(fName);
             } else {
                 String[] contents = list.stream()
-                    .map(c -> prittyPrint(indent + 1, null, c))
+                    .map(c -> prittyPrint(null, c))
                     .toArray(String[]::new);
                 return formatter.fmtObjectList(fName, contents);
             }
         } else {
-            return prittyPrint(indent, fName, fObj);
+            return prittyPrint(fName, fObj);
         }
     }
 }

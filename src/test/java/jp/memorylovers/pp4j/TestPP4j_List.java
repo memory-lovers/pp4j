@@ -89,7 +89,7 @@ public class TestPP4j_List {
         String[] actual = PP4j.pp(list)
             .split("\n");
         String[] expected = {
-            "<null>"
+            "[<null>]"
         };
 
         String msg = "actual is \n" + String.join("\n", actual) + "\n";
@@ -166,9 +166,32 @@ public class TestPP4j_List {
         String[] actual = PP4j.pp(plist)
             .split("\n");
         String[] expected = {
-            "[ ",
+            "[<null>, <null>]"
+        };
+
+        String msg = "actual is \n" + String.join("\n", actual) + "\n";
+        assertArrayEquals(msg, expected, actual);
+    }
+
+    @Test
+    public void test_List_List_Object_child_nullMix() {
+        List<List<TestObjectNest>> plist = new ArrayList<>();
+        List<TestObjectNest> clist = new ArrayList<>();
+        clist.add(new TestObjectNest());
+        plist.add(null);
+        plist.add(clist);
+
+        String[] actual = PP4j.pp(plist)
+            .split("\n");
+        String[] expected = {
+            "[",
             "  <null>",
-            "  <null>",
+            "  [",
+            "    TestObjectNest {",
+            "      str = AAA",
+            "      obj = <null>",
+            "    }",
+            "  ]",
             "]"
         };
 
